@@ -651,7 +651,9 @@ function encodeForStrudel(code) {
 function applyToStrudel(code) {
   const encoded = encodeForStrudel(code);
   const url = `https://strudel.cc/#${encoded}`;
-  strudelFrame.src = url;
+  // Blank first so that hash-only changes force a full reload
+  strudelFrame.src = 'about:blank';
+  setTimeout(() => { strudelFrame.src = url; }, 50);
   strudelStatus.className = 'loaded';
   strudelUrlEl.textContent = code.split('\n')[0].trim().slice(0, 60) + '…';
   state.lastCode = code;
@@ -790,7 +792,7 @@ async function callLLM(messages) {
       model,
       messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
       temperature: 0.85,
-      max_tokens: 1800,
+      max_completion_tokens: 1800,
     }),
   });
 
