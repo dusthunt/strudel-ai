@@ -453,7 +453,7 @@
     </div>
 
     <div id="input-area">
-      <textarea id="user-input" placeholder="Describe the sound you want…" rows="2"></textarea>
+      <textarea id="user-input" placeholder="Describe the sound you want… (or 'apply' to reload last code)" rows="2"></textarea>
       <div class="input-row">
         <span class="input-hint">Shift+Enter for new line · Enter to send</span>
         <button id="send-btn" onclick="sendMessage()">Generate</button>
@@ -682,7 +682,17 @@ function renderMessage(role, content, code) {
     const btn = document.createElement('button');
     btn.className = 'apply-btn';
     btn.innerHTML = '<span class="icon">▶</span> Apply to Strudel';
-    btn.onclick = () => applyToStrudel(code);
+    btn.onclick = () => {
+      applyToStrudel(code);
+      btn.innerHTML = '<span class="icon">✓</span> Applied — press ▶ in Strudel';
+      btn.style.background = 'var(--green)';
+      btn.style.color = '#000';
+      setTimeout(() => {
+        btn.innerHTML = '<span class="icon">▶</span> Apply to Strudel';
+        btn.style.background = '';
+        btn.style.color = '';
+      }, 2500);
+    };
     wrap.appendChild(btn);
   }
 
@@ -797,6 +807,18 @@ async function callLLM(messages) {
 async function sendMessage() {
   const text = userInputEl.value.trim();
   if (!text || state.loading) return;
+
+  // Intercept local commands — don't send to LLM
+  if (/^(apply|play|run|go)$/i.test(text)) {
+    if (state.lastCode) {
+      applyToStrudel(state.lastCode);
+      userInputEl.value = '';
+    } else {
+      renderError('No code to apply yet — generate something first.');
+      userInputEl.value = '';
+    }
+    return;
+  }
 
   state.loading = true;
   sendBtnEl.disabled = true;
