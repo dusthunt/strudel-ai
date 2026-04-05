@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Strudel AI</title>
-  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+  <script src="https://unpkg.com/@strudel/web@1.3.0"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -22,6 +22,7 @@
       --assistant-bubble: #1a1a26;
       --green: #4ade80;
       --red: #f87171;
+      --yellow: #fbbf24;
     }
 
     html, body {
@@ -33,10 +34,7 @@
       font-size: 14px;
     }
 
-    #app {
-      display: flex;
-      height: 100vh;
-    }
+    #app { display: flex; height: 100vh; }
 
     /* ── Chat Panel ── */
     #chat-panel {
@@ -55,22 +53,13 @@
       align-items: center;
       gap: 10px;
       background: var(--bg);
+      flex-shrink: 0;
     }
 
-    #panel-header h1 {
-      font-size: 15px;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      color: var(--accent2);
-    }
+    #panel-header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0.02em; color: var(--accent2); }
+    #panel-header .subtitle { font-size: 11px; color: var(--muted); margin-left: auto; }
 
-    #panel-header .subtitle {
-      font-size: 11px;
-      color: var(--muted);
-      margin-left: auto;
-    }
-
-    /* Config section */
+    /* Config */
     #config {
       padding: 12px 14px;
       border-bottom: 1px solid var(--border);
@@ -78,13 +67,10 @@
       flex-direction: column;
       gap: 8px;
       background: var(--surface2);
+      flex-shrink: 0;
     }
 
-    .config-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
+    .config-row { display: flex; gap: 8px; align-items: center; }
 
     select, input[type="text"], input[type="password"] {
       background: var(--bg);
@@ -96,38 +82,87 @@
       outline: none;
       font-family: inherit;
     }
-
-    select:focus, input:focus {
-      border-color: var(--accent);
-    }
-
+    select:focus, input:focus { border-color: var(--accent); }
     select { cursor: pointer; }
 
     #provider-select { width: 120px; flex-shrink: 0; }
     #model-input { flex: 1; }
     #api-key-input { flex: 1; font-family: monospace; font-size: 11px; }
 
-    .key-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .key-label {
-      font-size: 11px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
+    .key-row { display: flex; gap: 8px; align-items: center; }
+    .key-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
 
     #key-status {
-      width: 7px;
-      height: 7px;
+      width: 7px; height: 7px;
       border-radius: 50%;
       background: var(--muted);
       flex-shrink: 0;
     }
-
     #key-status.ok { background: var(--green); }
+
+    /* System prompt collapsible */
+    #sysprompt-section {
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+      flex-shrink: 0;
+    }
+
+    #sysprompt-toggle {
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--muted);
+      padding: 8px 14px;
+      font-size: 11px;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+    }
+    #sysprompt-toggle:hover { color: var(--text); }
+    #sysprompt-toggle .arrow { transition: transform 0.15s; font-size: 9px; }
+    #sysprompt-toggle.open .arrow { transform: rotate(90deg); }
+
+    #sysprompt-body {
+      display: none;
+      padding: 0 14px 12px;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #sysprompt-body.open { display: flex; }
+
+    #sysprompt-textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 11px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      line-height: 1.5;
+      resize: vertical;
+      min-height: 120px;
+      max-height: 300px;
+      outline: none;
+    }
+    #sysprompt-textarea:focus { border-color: var(--accent); }
+
+    .sysprompt-actions { display: flex; gap: 6px; }
+    .sysprompt-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 5px;
+      padding: 4px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .sysprompt-btn:hover { border-color: var(--accent); color: var(--accent2); }
+    .sysprompt-hint { font-size: 10px; color: var(--muted); }
 
     /* Messages */
     #messages {
@@ -139,26 +174,16 @@
       gap: 12px;
       scroll-behavior: smooth;
     }
-
     #messages::-webkit-scrollbar { width: 4px; }
     #messages::-webkit-scrollbar-track { background: transparent; }
     #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-    .message {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
+    .message { display: flex; flex-direction: column; gap: 4px; }
     .message-role {
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
-      padding: 0 2px;
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--muted); padding: 0 2px;
     }
-
     .message.user .message-role { color: var(--accent); }
     .message.assistant .message-role { color: var(--accent2); }
 
@@ -170,12 +195,8 @@
       font-size: 13px;
       border: 1px solid var(--border);
     }
+    .message.assistant .message-body { background: var(--assistant-bubble); }
 
-    .message.assistant .message-body {
-      background: var(--assistant-bubble);
-    }
-
-    /* Code blocks inside messages */
     .message-body pre {
       background: var(--code-bg);
       border: 1px solid var(--border);
@@ -183,12 +204,11 @@
       padding: 10px 12px;
       overflow-x: auto;
       margin: 8px 0 4px;
-      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
       font-size: 11.5px;
       line-height: 1.6;
       color: #c4b5fd;
     }
-
     .message-body code {
       font-family: 'JetBrains Mono', 'Fira Code', monospace;
       font-size: 11.5px;
@@ -197,16 +217,10 @@
       border-radius: 3px;
       color: #c4b5fd;
     }
-
-    .message-body pre code {
-      background: none;
-      padding: 0;
-    }
-
+    .message-body pre code { background: none; padding: 0; }
     .message-body p { margin-bottom: 6px; }
     .message-body p:last-child { margin-bottom: 0; }
 
-    /* Apply button on assistant messages */
     .apply-btn {
       align-self: flex-start;
       margin-top: 4px;
@@ -221,19 +235,13 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      transition: background 0.15s, opacity 0.15s;
+      transition: background 0.15s;
+      font-family: inherit;
     }
-
     .apply-btn:hover { background: var(--accent2); }
-    .apply-btn:disabled { opacity: 0.5; cursor: default; }
 
-    .apply-btn .icon { font-size: 11px; }
-
-    /* Thinking indicator */
     .thinking {
-      display: flex;
-      gap: 5px;
-      align-items: center;
+      display: flex; gap: 5px; align-items: center;
       padding: 10px 12px;
       background: var(--assistant-bubble);
       border: 1px solid var(--border);
@@ -241,22 +249,12 @@
       color: var(--muted);
       font-size: 12px;
     }
-
-    .dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: var(--muted);
-      animation: pulse 1.2s infinite;
-    }
+    .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); animation: pulse 1.2s infinite; }
     .dot:nth-child(2) { animation-delay: 0.2s; }
     .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse { 0%,60%,100% { opacity:0.2; } 30% { opacity:1; } }
 
-    @keyframes pulse {
-      0%, 60%, 100% { opacity: 0.2; }
-      30% { opacity: 1; }
-    }
-
-    /* Input area */
+    /* Input */
     #input-area {
       padding: 12px 14px;
       border-top: 1px solid var(--border);
@@ -264,8 +262,8 @@
       flex-direction: column;
       gap: 8px;
       background: var(--bg);
+      flex-shrink: 0;
     }
-
     #user-input {
       width: 100%;
       background: var(--surface2);
@@ -281,33 +279,19 @@
       min-height: 60px;
       max-height: 160px;
     }
-
     #user-input:focus { border-color: var(--accent); }
     #user-input::placeholder { color: var(--muted); }
 
-    .input-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .input-hint {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
+    .input-row { display: flex; justify-content: space-between; align-items: center; }
+    .input-hint { font-size: 11px; color: var(--muted); }
     #send-btn {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 7px 18px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 6px;
+      padding: 7px 18px; font-size: 13px;
+      font-weight: 500; cursor: pointer;
       transition: background 0.15s, opacity 0.15s;
+      font-family: inherit;
     }
-
     #send-btn:hover { background: var(--accent2); }
     #send-btn:disabled { opacity: 0.5; cursor: default; }
 
@@ -317,94 +301,100 @@
       display: flex;
       flex-direction: column;
       background: var(--bg);
+      min-width: 0;
     }
 
     #strudel-header {
-      padding: 10px 14px;
+      padding: 8px 14px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 10px;
-      font-size: 12px;
-      color: var(--muted);
+      gap: 8px;
       background: var(--bg);
+      flex-shrink: 0;
     }
 
-    #strudel-status {
+    #engine-status {
       width: 7px; height: 7px;
       border-radius: 50%;
       background: var(--muted);
+      flex-shrink: 0;
     }
+    #engine-status.ready  { background: var(--yellow); }
+    #engine-status.active { background: var(--green); }
+    #engine-status.error  { background: var(--red); }
 
-    #strudel-status.loaded { background: var(--green); }
+    #engine-label { font-size: 11px; color: var(--muted); }
 
-    #strudel-url {
+    .ctrl-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 5px;
+      padding: 4px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.1s, border-color 0.1s;
+    }
+    .ctrl-btn:hover { border-color: var(--accent); background: var(--surface); }
+    .ctrl-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    #strudel-err {
+      padding: 6px 14px;
+      font-size: 11px;
       font-family: monospace;
-      font-size: 10px;
-      color: var(--muted);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      max-width: 400px;
+      color: var(--red);
+      background: #1a0f0f;
+      border-bottom: 1px solid #3a1a1a;
+      white-space: pre-wrap;
+      display: none;
+      flex-shrink: 0;
     }
 
-    #strudel-frame {
+    #code-editor {
       flex: 1;
       width: 100%;
+      background: var(--code-bg);
       border: none;
+      color: #c4b5fd;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      padding: 16px;
+      resize: none;
+      outline: none;
+      tab-size: 2;
     }
+    #code-editor::placeholder { color: var(--muted); }
+    #code-editor::-webkit-scrollbar { width: 5px; }
+    #code-editor::-webkit-scrollbar-track { background: transparent; }
+    #code-editor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-    /* Empty state */
+    /* Empty / example prompts */
     #empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      gap: 12px;
-      color: var(--muted);
-      text-align: center;
-      padding: 40px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 100%; gap: 12px;
+      color: var(--muted); text-align: center; padding: 40px;
     }
-
     #empty-state .big { font-size: 40px; }
     #empty-state h2 { font-size: 16px; color: var(--text); font-weight: 500; }
     #empty-state p { font-size: 13px; line-height: 1.6; max-width: 300px; }
 
-    .example-prompts {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 8px;
-      width: 100%;
-      max-width: 340px;
-    }
-
+    .example-prompts { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; width: 100%; max-width: 340px; }
     .example-prompt {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 12px;
-      font-size: 12px;
-      color: var(--text);
-      cursor: pointer;
-      text-align: left;
-      transition: border-color 0.15s, background 0.15s;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 6px; padding: 8px 12px; font-size: 12px;
+      color: var(--text); cursor: pointer; text-align: left;
+      transition: border-color 0.15s, background 0.15s; font-family: inherit;
     }
-
-    .example-prompt:hover {
-      border-color: var(--accent);
-      background: var(--surface);
-    }
+    .example-prompt:hover { border-color: var(--accent); background: var(--surface); }
 
     .error-msg {
-      background: #2a1a1a;
-      border: 1px solid #5a2020;
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-size: 12px;
-      color: var(--red);
-      line-height: 1.5;
+      background: #2a1a1a; border: 1px solid #5a2020;
+      border-radius: 8px; padding: 10px 12px;
+      font-size: 12px; color: var(--red); line-height: 1.5;
     }
   </style>
 </head>
@@ -437,6 +427,21 @@
       </div>
     </div>
 
+    <!-- System Prompt Editor -->
+    <div id="sysprompt-section">
+      <button id="sysprompt-toggle" onclick="toggleSysPrompt()">
+        <span class="arrow">▶</span> System Prompt
+      </button>
+      <div id="sysprompt-body">
+        <textarea id="sysprompt-textarea" spellcheck="false"></textarea>
+        <div class="sysprompt-actions">
+          <button class="sysprompt-btn" onclick="saveSysPrompt()">Save</button>
+          <button class="sysprompt-btn" onclick="resetSysPrompt()">Reset to default</button>
+        </div>
+        <span class="sysprompt-hint">Changes apply to the next message sent.</span>
+      </div>
+    </div>
+
     <div id="messages">
       <div id="empty-state">
         <div class="big">🎛</div>
@@ -444,7 +449,7 @@
         <p>Describe the vibe, genre, tempo, or mood and the AI will write Strudel code for you.</p>
         <div class="example-prompts">
           <button class="example-prompt" onclick="fillPrompt(this)">Dark acid techno, 138bpm, heavy sub bass</button>
-          <button class="example-prompt" onclick="fillPrompt(this)">Dreamy lo-fi hip hop with Rhodes and rain sounds</button>
+          <button class="example-prompt" onclick="fillPrompt(this)">Dreamy lo-fi hip hop with Rhodes and slow chords</button>
           <button class="example-prompt" onclick="fillPrompt(this)">Glitchy IDM, broken beats, metallic textures</button>
           <button class="example-prompt" onclick="fillPrompt(this)">Minimal dub techno, 126bpm, dubby chords, sparse kicks</button>
           <button class="example-prompt" onclick="fillPrompt(this)">Ambient drone with slow evolving pads, no drums</button>
@@ -453,7 +458,7 @@
     </div>
 
     <div id="input-area">
-      <textarea id="user-input" placeholder="Describe the sound you want… (or 'apply' to reload last code)" rows="2"></textarea>
+      <textarea id="user-input" placeholder="Describe the sound you want…" rows="2"></textarea>
       <div class="input-row">
         <span class="input-hint">Shift+Enter for new line · Enter to send</span>
         <button id="send-btn" onclick="sendMessage()">Generate</button>
@@ -464,16 +469,24 @@
   <!-- ── RIGHT: Strudel Panel ── -->
   <div id="strudel-panel">
     <div id="strudel-header">
-      <div id="strudel-status" title="No code loaded"></div>
-      <span>strudel.cc</span>
-      <span id="strudel-url"></span>
+      <div id="engine-status" title="Initializing…"></div>
+      <span id="engine-label">Loading Strudel…</span>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="ctrl-btn" id="play-btn" onclick="playCode()">▶ Play</button>
+        <button class="ctrl-btn" id="stop-btn" onclick="stopCode()">■ Stop</button>
+      </div>
     </div>
-    <iframe
-      id="strudel-frame"
-      src="https://strudel.cc"
-      allow="autoplay; microphone"
-      sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
-    ></iframe>
+    <div id="strudel-err"></div>
+    <textarea
+      id="code-editor"
+      spellcheck="false"
+      placeholder="// Generated Strudel code will appear here.
+// You can edit it directly and press ▶ Play to hear changes.
+
+// Example:
+// setcps(120/60/4)
+// s(&quot;bd sd hh sd&quot;).room(0.2)"
+    ></textarea>
   </div>
 
 </div>
@@ -481,25 +494,31 @@
 <script>
 // ── State ──────────────────────────────────────────────────────────────────
 const state = {
-  history: [],          // full conversation history for the LLM
-  lastCode: null,       // last extracted Strudel code
+  history: [],
+  lastCode: null,
   loading: false,
+  engineReady: false,
+  playing: false,
 };
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
-const messagesEl    = document.getElementById('messages');
-const userInputEl   = document.getElementById('user-input');
-const sendBtnEl     = document.getElementById('send-btn');
-const apiKeyEl      = document.getElementById('api-key-input');
-const modelEl       = document.getElementById('model-input');
-const providerEl    = document.getElementById('provider-select');
-const baseUrlRowEl  = document.getElementById('base-url-row');
-const baseUrlEl     = document.getElementById('base-url-input');
-const keyStatusEl   = document.getElementById('key-status');
-const strudelFrame  = document.getElementById('strudel-frame');
-const strudelStatus = document.getElementById('strudel-status');
-const strudelUrlEl  = document.getElementById('strudel-url');
-const emptyState    = document.getElementById('empty-state');
+const messagesEl     = document.getElementById('messages');
+const userInputEl    = document.getElementById('user-input');
+const sendBtnEl      = document.getElementById('send-btn');
+const apiKeyEl       = document.getElementById('api-key-input');
+const modelEl        = document.getElementById('model-input');
+const providerEl     = document.getElementById('provider-select');
+const baseUrlRowEl   = document.getElementById('base-url-row');
+const baseUrlEl      = document.getElementById('base-url-input');
+const keyStatusEl    = document.getElementById('key-status');
+const emptyState     = document.getElementById('empty-state');
+const codeEditorEl   = document.getElementById('code-editor');
+const engineStatusEl = document.getElementById('engine-status');
+const engineLabelEl  = document.getElementById('engine-label');
+const strudelErrEl   = document.getElementById('strudel-err');
+const playBtnEl      = document.getElementById('play-btn');
+const stopBtnEl      = document.getElementById('stop-btn');
+const sysPromptEl    = document.getElementById('sysprompt-textarea');
 
 // ── Persistence ────────────────────────────────────────────────────────────
 const LS = {
@@ -508,10 +527,11 @@ const LS = {
 };
 
 function loadSettings() {
-  apiKeyEl.value  = LS.get('sai_key', '');
-  modelEl.value   = LS.get('sai_model', 'gpt-4o');
+  apiKeyEl.value   = LS.get('sai_key', '');
+  modelEl.value    = LS.get('sai_model', 'gpt-4o');
   providerEl.value = LS.get('sai_provider', 'openai');
-  baseUrlEl.value = LS.get('sai_base_url', '');
+  baseUrlEl.value  = LS.get('sai_base_url', '');
+  sysPromptEl.value = LS.get('sai_sysprompt', DEFAULT_SYSTEM_PROMPT);
   updateKeyStatus();
   toggleBaseUrl();
 }
@@ -530,7 +550,6 @@ function updateKeyStatus() {
   keyStatusEl.title = ok ? 'API key set' : 'No API key';
 }
 
-// Default models per provider
 const PROVIDER_DEFAULTS = {
   openai: 'gpt-4o',
   openrouter: 'anthropic/claude-sonnet-4-6',
@@ -544,7 +563,6 @@ function toggleBaseUrl() {
 apiKeyEl.addEventListener('input', saveSettings);
 modelEl.addEventListener('input', saveSettings);
 providerEl.addEventListener('change', () => {
-  // Auto-fill default model for the chosen provider
   const def = PROVIDER_DEFAULTS[providerEl.value];
   if (def) modelEl.value = def;
   saveSettings();
@@ -553,34 +571,26 @@ providerEl.addEventListener('change', () => {
 baseUrlEl.addEventListener('input', saveSettings);
 
 // ── System Prompt ──────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are a Strudel live coding assistant. Strudel is a browser-based live coding music environment based on TidalCycles.
+const DEFAULT_SYSTEM_PROMPT = `You are a Strudel live coding music assistant. Strudel is a browser-based live coding environment based on TidalCycles patterns.
 
 When the user describes a sound, vibe, or musical idea, respond with working Strudel code.
 
-## Strudel Syntax Reference
+## Strudel Syntax
 
-### Basic sounds
+### Rhythm & samples
 \`\`\`js
-s("bd sd hh sd")               // samples: bd=kick, sd=snare, hh=hihat, oh=open hat, cp=clap, rim=rimshot
-s("hh*8")                      // repeat 8 times per cycle
-s("bd*2 sd [hh hh] sd")        // subdivision with []
-s("bd(3,8)")                   // Euclidean rhythm: 3 hits over 8 steps
-s("hh:0 hh:2 hh:4")           // sample index variation with :
+s("bd sd hh sd")               // basic beat
+s("bd*2 sd [hh hh] sd")        // subdivisions
+s("bd(3,8) sd(2,8) hh(7,8)")   // Euclidean rhythms
+s("hh:0 hh:2 hh:4")            // sample variants with :N
 \`\`\`
 
-### Notes and melody
+### Notes & melody
 \`\`\`js
-note("c3 e3 g3 b3").sound("piano")
-note("<c3 eb3 g3> <f3 ab3>").sound("piano").slow(2)
-note("c2 ~ c2 ~").sound("bass")  // ~ = rest
-\`\`\`
-
-### Mini-notation patterns
-\`\`\`js
-"c3 [e3 g3] b3"    // [] = subdivide step
-"c3 <e3 g3>"       // <> = alternate each cycle
-"c3 e3*2"          // *2 = repeat
-"c3 e3?"           // ? = random chance
+note("c3 e3 g3").sound("gm_acoustic_grand_piano")
+note("<c3 eb3 g3> <f3 ab3>").sound("gm_electric_piano_1").slow(2)
+note("c2 ~ eb2 ~").sound("gm_acoustic_bass")   // ~ = rest
+note("0 2 4 7").scale("C:minor").sound("gm_acoustic_grand_piano")
 \`\`\`
 
 ### Stacking layers
@@ -588,76 +598,179 @@ note("c2 ~ c2 ~").sound("bass")  // ~ = rest
 stack(
   s("bd sd bd sd"),
   s("hh*8").gain(0.4),
-  note("c2 ~ eb2 ~").sound("bass").lpf(400)
+  note("c2 ~ eb2 ~").sound("gm_acoustic_bass").lpf(400)
 )
 \`\`\`
 
 ### Effects
 \`\`\`js
-.room(0.4)         // reverb (0-1)
-.delay(0.25)       // delay
-.delaytime(0.33)   // delay time
-.delayfeedback(0.5)
-.lpf(800)          // low-pass filter (Hz)
-.hpf(200)          // high-pass filter (Hz)
-.gain(0.7)         // volume (0-1+)
-.pan(-0.5)         // stereo pan (-1 to 1)
-.vowel("a e i")    // vowel filter
-.crush(4)          // bit crush
-.speed(0.8)        // sample playback speed / pitch
-.begin(0.1).end(0.9)  // sample start/end
+.room(0.4)          // reverb 0–1
+.delay(0.25)        // delay send
+.delaytime(0.375)   // delay time in seconds
+.delayfeedback(0.4)
+.lpf(800)           // low-pass filter Hz
+.hpf(200)           // high-pass filter Hz
+.gain(0.7)          // volume 0–1+
+.pan(-0.5)          // stereo pan -1 to 1
+.vowel("a e i")     // formant filter
+.crush(4)           // bit crush
+.speed(0.8)         // pitch/speed
+.begin(0.1).end(0.9)
 \`\`\`
 
 ### Tempo
 \`\`\`js
-setcps(140/60/4)   // set BPM: bpm / 60 / 4 = cycles per second
+setcps(140/60/4)    // cycles per second = bpm/60/4
 \`\`\`
 
-### Pattern transformations
+### Transformations
 \`\`\`js
-.fast(2)           // double speed
-.slow(2)           // half speed
-.rev()             // reverse
-.jux(rev)          // jux: apply fn to right channel only
-.every(4, fast(2)) // every 4 cycles, apply fast(2)
+.fast(2)  .slow(2)  .rev()
+.jux(rev)                         // stereo widening
+.every(4, x => x.fast(2))
 .sometimes(x => x.room(0.8))
-.rarely(x => x.speed(0.5))
-.degradeBy(0.2)    // randomly drop 20% of events
+.degradeBy(0.2)                   // random drops
 \`\`\`
 
-### Chord/scale helpers
+### Chords
 \`\`\`js
-note("0 2 4 7").scale("C:minor").sound("piano")
-chord("<Cm7 Fm7 Gm7>").voicing().sound("piano")
+chord("<Cm7 Fm7 Gm7>").voicing().sound("gm_electric_piano_1")
 \`\`\`
 
-### Available sample banks
-Common: bd, sd, hh, oh, cp, rim, bass, bass2, bass3, bd, sd, feel, jazz, tabla, east, moog, amencutup, amen, breaks165, reese, diphone2, sitar, gtr, casio, mouth, noise, breath, metal, realclaps, latibro, psr, odx
+## IMPORTANT: Reliable sounds to use
+
+**Always use these for percussion:**
+bd, sd, hh, oh, cp, rim
+
+**Always use gm_ prefixed names for melodic instruments:**
+- Piano: gm_acoustic_grand_piano, gm_electric_piano_1, gm_electric_piano_2, gm_harpsichord
+- Guitar: gm_electric_guitar_clean, gm_electric_guitar_muted, gm_overdriven_guitar, gm_distortion_guitar, gm_guitar_harmonics, gm_guitar_nylon, gm_guitar_steel
+- Bass: gm_acoustic_bass, gm_electric_bass_finger, gm_electric_bass_pick, gm_slap_bass_1, gm_fretless_bass
+- Strings: gm_violin, gm_cello, gm_string_ensemble_1, gm_synthstrings_1
+- Pads/Synths: gm_pad_1_new_age, gm_pad_2_warm, gm_pad_3_polysynth, gm_pad_8_sweep, gm_lead_1_square, gm_lead_2_sawtooth
+- Brass: gm_trumpet, gm_trombone, gm_french_horn, gm_muted_trumpet
+- Wind: gm_flute, gm_pan_flute, gm_ocarina
+- Keys/Organ: gm_church_organ, gm_reed_organ, gm_accordion
+- World: gm_sitar, gm_banjo, gm_kalimba, gm_koto
+- Choir: gm_choir_aahs, gm_voice_oohs
+
+**Do NOT invent sound names** like "piano", "guitar", "violin" without the gm_ prefix — they may not exist. Use the exact names above.
+
+**For purely synthetic tones:**
+\`\`\`js
+note("c3 e3").sound("sawtooth")   // basic synth waveforms
+note("c3").sound("square").lpf(600)
+\`\`\`
 
 ## Rules
-1. Always output a single fenced code block with the complete Strudel pattern.
-2. Code must be valid Strudel JavaScript — no imports, no module syntax. It runs directly.
-3. Aim for musicality: use variation, dynamics (gain), and some effects.
-4. Match the BPM/energy to what the user describes.
-5. After the code block, briefly explain what you made (2-3 sentences max).
-6. When the user asks to adjust or modify, output the full revised code block.`;
+1. Output a single fenced \`\`\`js code block with the complete pattern.
+2. Code runs directly — no imports, no module syntax.
+3. Do NOT add .play() — the system handles evaluation automatically.
+4. Use gm_ prefixed instrument names for any melodic/tonal sounds.
+5. Be musical: vary dynamics with .gain(), add space with .room().
+6. After the code block, explain what you made in 2–3 sentences max.
+7. For follow-up edits, output the full revised code block.`;
 
-// ── Strudel ────────────────────────────────────────────────────────────────
-function encodeForStrudel(code) {
-  // LZ-string compression, same as strudel.cc uses for share URLs
-  return LZString.compressToEncodedURIComponent(code);
+function getSystemPrompt() {
+  return sysPromptEl.value.trim() || DEFAULT_SYSTEM_PROMPT;
 }
 
-function applyToStrudel(code) {
-  const encoded = encodeForStrudel(code);
-  const url = `https://strudel.cc/#${encoded}`;
-  // Blank first so that hash-only changes force a full reload
-  strudelFrame.src = 'about:blank';
-  setTimeout(() => { strudelFrame.src = url; }, 50);
-  strudelStatus.className = 'loaded';
-  strudelUrlEl.textContent = code.split('\n')[0].trim().slice(0, 60) + '…';
+function toggleSysPrompt() {
+  const toggle = document.getElementById('sysprompt-toggle');
+  const body   = document.getElementById('sysprompt-body');
+  const isOpen = body.classList.toggle('open');
+  toggle.classList.toggle('open', isOpen);
+}
+
+function saveSysPrompt() {
+  LS.set('sai_sysprompt', sysPromptEl.value);
+  const btn = document.querySelector('.sysprompt-btn');
+  const orig = btn.textContent;
+  btn.textContent = 'Saved ✓';
+  setTimeout(() => { btn.textContent = orig; }, 1500);
+}
+
+function resetSysPrompt() {
+  sysPromptEl.value = DEFAULT_SYSTEM_PROMPT;
+  LS.set('sai_sysprompt', DEFAULT_SYSTEM_PROMPT);
+}
+
+// ── Strudel Engine ─────────────────────────────────────────────────────────
+function setEngineStatus(status, label) {
+  engineStatusEl.className = status;
+  engineLabelEl.textContent = label;
+}
+
+function showStrudelError(msg) {
+  strudelErrEl.style.display = 'block';
+  strudelErrEl.textContent = msg;
+}
+function clearStrudelError() {
+  strudelErrEl.style.display = 'none';
+  strudelErrEl.textContent = '';
+}
+
+async function initEngine() {
+  try {
+    await initStrudel();
+    state.engineReady = true;
+    setEngineStatus('ready', 'Ready — click ▶ Play after generating code');
+  } catch(e) {
+    setEngineStatus('error', 'Failed to load Strudel engine');
+    console.error('Strudel init error:', e);
+  }
+}
+
+async function playCode() {
+  const code = codeEditorEl.value.trim();
+  if (!code) return;
+  clearStrudelError();
+  try {
+    await evaluate(code, true);
+    state.playing = true;
+    state.lastCode = code;
+    setEngineStatus('active', 'Playing');
+    playBtnEl.classList.add('active');
+    stopBtnEl.classList.remove('active');
+  } catch(e) {
+    showStrudelError(String(e));
+    setEngineStatus('error', 'Pattern error');
+  }
+}
+
+function stopCode() {
+  try { hush(); } catch(e) {}
+  state.playing = false;
+  setEngineStatus('ready', 'Stopped');
+  playBtnEl.classList.remove('active');
+  stopBtnEl.classList.add('active');
+  setTimeout(() => stopBtnEl.classList.remove('active'), 600);
+}
+
+async function applyToStrudel(code) {
+  codeEditorEl.value = code;
   state.lastCode = code;
+  clearStrudelError();
+  // If already playing, hot-swap immediately
+  if (state.playing) {
+    try {
+      await evaluate(code, true);
+      setEngineStatus('active', 'Playing');
+    } catch(e) {
+      showStrudelError(String(e));
+      setEngineStatus('error', 'Pattern error');
+    }
+  }
+  // If not playing yet, code is loaded in editor — user clicks ▶ Play
 }
+
+// Allow Ctrl+Enter in code editor to evaluate
+codeEditorEl.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    playCode();
+  }
+});
 
 // ── Message rendering ──────────────────────────────────────────────────────
 function hideEmptyState() {
@@ -683,17 +796,17 @@ function renderMessage(role, content, code) {
   if (role === 'assistant' && code) {
     const btn = document.createElement('button');
     btn.className = 'apply-btn';
-    btn.innerHTML = '<span class="icon">▶</span> Apply to Strudel';
-    btn.onclick = () => {
-      applyToStrudel(code);
-      btn.innerHTML = '<span class="icon">✓</span> Applied — press ▶ in Strudel';
+    btn.innerHTML = '▶ Load into editor';
+    btn.onclick = async () => {
+      await applyToStrudel(code);
+      btn.innerHTML = '✓ Loaded';
       btn.style.background = 'var(--green)';
       btn.style.color = '#000';
       setTimeout(() => {
-        btn.innerHTML = '<span class="icon">▶</span> Apply to Strudel';
+        btn.innerHTML = '▶ Load into editor';
         btn.style.background = '';
         btn.style.color = '';
-      }, 2500);
+      }, 2000);
     };
     wrap.appendChild(btn);
   }
@@ -736,29 +849,20 @@ function renderThinking() {
   return wrap;
 }
 
-// Simple markdown-ish formatter: handles ```code``` blocks and inline `code`
 function formatContent(text) {
-  // Code fences
-  text = text.replace(/```[\w]*\n?([\s\S]*?)```/g, (_, code) => {
-    return `<pre><code>${escHtml(code.trim())}</code></pre>`;
-  });
-  // Inline code
+  text = text.replace(/```[\w]*\n?([\s\S]*?)```/g, (_, c) =>
+    `<pre><code>${escHtml(c.trim())}</code></pre>`);
   text = text.replace(/`([^`\n]+)`/g, (_, c) => `<code>${escHtml(c)}</code>`);
-  // Paragraphs (double newline)
-  const paras = text.split(/\n{2,}/);
-  return paras.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+  return text.split(/\n{2,}/).map(p => `<p>${p.replace(/\n/g,'<br>')}</p>`).join('');
 }
 
 function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// ── Code extraction ────────────────────────────────────────────────────────
 function extractCode(text) {
-  // Prefer JS/strudel fenced block, fall back to any fenced block
-  const fenced = text.match(/```(?:js|javascript|strudel)?\n?([\s\S]+?)```/);
-  if (fenced) return fenced[1].trim();
-  return null;
+  const m = text.match(/```(?:js|javascript|strudel)?\n?([\s\S]+?)```/);
+  return m ? m[1].trim() : null;
 }
 
 // ── LLM API ───────────────────────────────────────────────────────────────
@@ -769,7 +873,6 @@ async function callLLM(messages) {
 
   if (!key) throw new Error('No API key set. Enter your key in the config above.');
 
-  // ── OpenAI / OpenRouter / OpenAI-compatible ────────────────────────────
   let url;
   if (provider === 'openrouter') {
     url = 'https://openrouter.ai/api/v1/chat/completions';
@@ -790,7 +893,7 @@ async function callLLM(messages) {
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+      messages: [{ role: 'system', content: getSystemPrompt() }, ...messages],
       temperature: 0.85,
       max_completion_tokens: 1800,
     }),
@@ -810,15 +913,9 @@ async function sendMessage() {
   const text = userInputEl.value.trim();
   if (!text || state.loading) return;
 
-  // Intercept local commands — don't send to LLM
   if (/^(apply|play|run|go)$/i.test(text)) {
-    if (state.lastCode) {
-      applyToStrudel(state.lastCode);
-      userInputEl.value = '';
-    } else {
-      renderError('No code to apply yet — generate something first.');
-      userInputEl.value = '';
-    }
+    userInputEl.value = '';
+    if (state.lastCode) playCode();
     return;
   }
 
@@ -827,29 +924,23 @@ async function sendMessage() {
   userInputEl.value = '';
   userInputEl.style.height = 'auto';
 
-  // Add to history and render
   state.history.push({ role: 'user', content: text });
   renderMessage('user', text, null);
-
   const thinkingEl = renderThinking();
 
   try {
     const reply = await callLLM(state.history);
     thinkingEl.remove();
-
-
     state.history.push({ role: 'assistant', content: reply });
 
     const code = extractCode(reply);
     renderMessage('assistant', reply, code);
+    if (code) await applyToStrudel(code);
 
-    // Auto-apply if code was generated
-    if (code) applyToStrudel(code);
-
-  } catch (err) {
+  } catch(err) {
     thinkingEl.remove();
     const msg = err instanceof TypeError && err.message.includes('fetch')
-      ? 'Network error — likely a CORS issue. Open this file via a local server (e.g. "python3 -m http.server 8080") rather than directly from disk, then visit http://localhost:8080.'
+      ? 'Network error (CORS). Serve this file via HTTP — e.g. "python3 -m http.server 8080".'
       : err.message;
     renderError(msg);
   } finally {
@@ -861,19 +952,13 @@ async function sendMessage() {
 
 // ── Input handling ─────────────────────────────────────────────────────────
 userInputEl.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
-
-// Auto-resize textarea
 userInputEl.addEventListener('input', () => {
   userInputEl.style.height = 'auto';
   userInputEl.style.height = Math.min(userInputEl.scrollHeight, 160) + 'px';
 });
 
-// ── Example prompts ────────────────────────────────────────────────────────
 function fillPrompt(btn) {
   userInputEl.value = btn.textContent;
   userInputEl.focus();
@@ -883,6 +968,7 @@ function fillPrompt(btn) {
 // ── Init ───────────────────────────────────────────────────────────────────
 loadSettings();
 userInputEl.focus();
+initEngine();
 </script>
 </body>
 </html>
